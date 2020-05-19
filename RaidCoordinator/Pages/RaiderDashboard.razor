@@ -1,0 +1,319 @@
+﻿@page "/raiderdashboard"
+
+@using System.Runtime.CompilerServices
+@using System.Security.Cryptography
+@using RaidCoordinator.Data
+@using Discord;
+@using Microsoft.Extensions.DependencyInjection;
+@inject RaidCoordinatorService RaidService
+@inject DiscordService DiscordServiceReference
+@inject IServiceProvider ServiceProvider
+
+<h1>Raider Dashboard</h1>
+
+@if (this.RaidManager.Raiders == null || !RaidService.IsReady)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (!RaidManager.IsValidated)
+    {
+        <div>Please validate your channel before continuing..</div>
+        <br />
+
+        <div class="container">
+            <div class="row">
+                <div class="col-4">
+                    <input placeholder="channelId" @onchange="@((ChangeEventArgs __e) => UpdateChannelId(__e.Value.ToString()))" />
+                </div>
+                <div class="col-3">
+                    <input placeholder="token" @onchange="@((ChangeEventArgs __e) => UpdateToken(__e.Value.ToString()))" />
+                </div>
+                <div class="col-3">
+                    <button @onclick="ValidateChannelAndToken">Validate Channel and Token</button>
+                </div>
+            </div>
+        </div>
+
+    }
+    else
+    {
+        <div>Raid Coordinating for @RaidManager.DiscordChannel.Name</div>
+        <hr />
+
+        <div class="container">
+            <div class="row">
+                <div class="col-3">
+                    <button @onclick="SendRaidRequestMessage">Send Initial Raid Request</button>
+                </div>
+                <div class="col-3">
+                    <button @onclick="SendBoostRequestMessage">Send Boost Request</button>
+                </div>
+            </div>
+            <hr />
+            <div class="row">
+                <div class="col-3">
+                    <input placeholder="username" @onchange="@((ChangeEventArgs __e) => this.username = __e.Value.ToString())" />
+                </div>
+                <div class="col-3">
+                    <button @onclick="(() => AddUserToRaiders(this.username))">Add User To Raider Queue</button>
+                </div>
+                <div class="col-3">
+                    <button @onclick="ResetRaiders">Reset Raider Queue</button>
+                </div>
+                <div class="col-3">
+                    <button @onclick="@(() => this.RaidManager.FinishRaiding())">Finish Raid</button>
+                </div>
+            </div>
+            <br />
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Raider</th>
+                    <th>Send Spawn Message</th>
+                    <th>Joined</th>
+                    <th>Killed</th>
+                    <th>Remove User</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var raider in this.RaidManager.Raiders)
+                {
+                    <tr>
+                        <td>@raider.Username</td>
+                        @if (@raider.IsAvailable)
+                        {
+                            <td><button @onclick="@(() => SendSpawnRequestMessage(@raider.Username))">Spawn Request</button></td>
+                            if (@raider.HasSpawnedBoss)
+                            {
+                                <td><button @onclick="SendJoinRequestMessage">Joined Raid Boss</button></td>
+                                <td><button @onclick="@(() => SendKilledRequestMessage(@raider))">Raid Boss Killed</button></td>
+                            }
+                            else
+                            {
+                                <td></td>
+                                <td></td>
+                            }
+                        }
+                        else
+                        {
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        }
+                        <td><button @onclick="@(() => RemoveUserFromRaiders(@raider.Username))">Remove From Queue</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Booster</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var booster in this.RaidManager.Boosters)
+                {
+                    <tr>
+                        <td>@booster</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+
+    private RaidManager RaidManager = new RaidManager();
+    private string username;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.RaidManager.OnRaidersChanged += this.RaidersChanged;
+        this.RaidManager.OnBoostersAdded += this.BoostersAdded;
+
+        DiscordServiceReference.OnReadyChanged += this.ReadyChanged;
+    }
+
+    // The event handler, will update the HTML view according to new stock value
+    private async void RaidersChanged(object sender, RaidersChangeEventArgs args)
+    {
+        // If null, we have removed all the reactions, thus remove everyone from the list
+        if (args == null)
+        {
+            this.RaidManager.Raiders.Clear();
+        }
+        else
+        {
+            var recordToupdate = this.RaidManager.Raiders.FirstOrDefault(x => x.Username == args.Value.Username);
+
+            // If not in the list, add to the list, otherwise remove the person from the list
+            if (recordToupdate == null)
+            {
+                this.RaidManager.Raiders.Add(args.Value);
+            }
+            else
+            {
+                this.RaidManager.Raiders.Remove(recordToupdate);
+            }
+        }
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    private async void BoostersAdded(object sender, BoostersAddedEventArgs args)
+    {
+        if (!this.RaidManager.Boosters.Contains(args.Value))
+            this.RaidManager.Boosters.Add(args.Value);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    private async void ReadyChanged(object sender, ReadyChangeEventArgs args)
+    {
+        this.RaidService.IsReady = args.Value;
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async void UpdateChannelId(string id)
+    {
+        this.RaidManager.Channel.Id = ulong.Parse(id);
+    }
+
+    public async void UpdateToken(string id)
+    {
+        this.RaidManager.Channel.Token = int.Parse(id);
+    }
+
+    public async void ValidateChannelAndToken()
+    {
+        ChannelToken channelTokenObject = null;
+        using (var context = ServiceProvider.GetRequiredService<RaidContext>())
+        {
+            foreach (var channelToken in context.ChannelTokens)
+            {
+                if (BitConverter.ToUInt64(channelToken.ChannelId) == this.RaidManager.Channel.Id && channelToken.Token == this.RaidManager.Channel.Token)
+                {
+                    channelTokenObject = channelToken;
+                    break;
+                }
+            }
+        }
+
+        IMessageChannel channel = null;
+        if (channelTokenObject != null)
+            channel = DiscordServiceReference.client.GetChannel(this.RaidManager.Channel.Id) as IMessageChannel;
+
+
+        if (await this.RaidManager.ValidateRaidServiceAndChannel(channel))
+        {
+            if (!RaidService.ChannelManagerPair.ContainsKey(this.RaidManager.Channel.Id))
+                RaidService.ChannelManagerPair.Add(this.RaidManager.Channel.Id, null);
+
+            RaidService.ChannelManagerPair[this.RaidManager.Channel.Id] = this.RaidManager;
+        }
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async void AddUserToRaiders(string username)
+    {
+        this.RaidManager.Raiders.Add(new Raider { Username = username, IsAvailable = true });
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async void RemoveUserFromRaiders(string username)
+    {
+        var raider = this.RaidManager.Raiders.FirstOrDefault(x => x.Username == username);
+
+        this.RaidManager.Raiders.Remove(raider);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async void ResetRaiders()
+    {
+        this.RaidManager.Raiders = await RaidManager.ResetRaiders(this.RaidManager.Raiders);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async void FinishRaid()
+    {
+        await RaidManager.FinishRaiding();
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async Task SendRaidRequestMessage()
+    {
+        await RaidManager.SendRaidRequestMessage();
+    }
+
+    public async Task SendBoostRequestMessage()
+    {
+        await RaidManager.SendBoostRequestMessage();
+    }
+
+    public async Task SendSpawnRequestMessage(string user)
+    {
+        await RaidManager.SendSpawnRequestMessage(user);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public async Task SendJoinRequestMessage()
+    {
+        await RaidManager.SendJoinRequestMessage();
+    }
+
+    public async Task SendKilledRequestMessage(Raider user)
+    {
+        this.RaidManager.Raiders = await RaidManager.SendKilledRequestMessage(user, this.RaidManager.Raiders);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        this.RaidManager.OnRaidersChanged -= this.RaidersChanged;
+    }
+}
