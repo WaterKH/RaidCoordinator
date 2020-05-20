@@ -1,15 +1,30 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="sidebar">
-    <NavMenu />
-</div>
-
-<div class="main">
-    <div class="top-row px-4">
-        <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+    <div class="sidebar">
+        <CascadingValue Value="@RaidManagerParent" Name="RaidManagerParent">
+            <NavMenu />
+        </CascadingValue>
     </div>
 
-    <div class="content px-4">
-        @Body
+    <div class="main">
+        <div class="top-row px-4">
+            @* Todo - put in my own About page *@
+            @*<a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>*@
+        </div>
+
+        <div class="content px-4">
+            <CascadingValue Value="@RaidManagerParent" Name="RaidManagerParent">
+                @Body
+            </CascadingValue>
+        </div>
     </div>
-</div>
+
+@functions
+{
+    public RaidManager RaidManagerParent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.RaidManagerParent = new RaidManager();
+    }
+}

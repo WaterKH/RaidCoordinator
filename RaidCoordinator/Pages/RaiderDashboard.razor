@@ -1,7 +1,5 @@
 ﻿@page "/raiderdashboard"
 
-@using System.Runtime.CompilerServices
-@using System.Security.Cryptography
 @using RaidCoordinator.Data
 @using Discord;
 @using Microsoft.Extensions.DependencyInjection;
@@ -9,8 +7,9 @@
 @inject DiscordService DiscordServiceReference
 @inject IServiceProvider ServiceProvider
 
-<h1>Raider Dashboard</h1>
 
+<h1>Raider Dashboard</h1>
+<hr />
 @if (this.RaidManager.Raiders == null || !RaidService.IsReady)
 {
     <p><em>Loading...</em></p>
@@ -25,13 +24,15 @@ else
         <div class="container">
             <div class="row">
                 <div class="col-4">
-                    <input placeholder="channelId" @onchange="@((ChangeEventArgs __e) => UpdateChannelId(__e.Value.ToString()))" />
+                    <input type="text" class="form-control" id="channelId" aria-describedby="channelHelp" placeholder="Enter ChannelId" @onchange="@((ChangeEventArgs __e) => UpdateChannelId(__e.Value.ToString()))">
+                    <small id="channelHelp" class="form-text text-muted">Right click on the channel you want the bot to post to (Developer mode needs to be active).</small>
+                </div>
+                <div class="col-4">
+                    <input type="text" class="form-control" id="token" aria-describedby="tokenHelp" placeholder="Enter Token" @onchange="@((ChangeEventArgs __e) => UpdateToken(__e.Value.ToString()))">
+                    <small id="tokenHelp" class="form-text text-muted">Send your channel id to the bot in Discord to retrieve your token.</small>
                 </div>
                 <div class="col-3">
-                    <input placeholder="token" @onchange="@((ChangeEventArgs __e) => UpdateToken(__e.Value.ToString()))" />
-                </div>
-                <div class="col-3">
-                    <button @onclick="ValidateChannelAndToken">Validate Channel and Token</button>
+                    <button type="button" class="btn btn-success" @onclick="ValidateChannelAndToken">Validate Channel and Token</button>
                 </div>
             </div>
         </div>
@@ -39,44 +40,42 @@ else
     }
     else
     {
-        <div>Raid Coordinating for @RaidManager.DiscordChannel.Name</div>
+        <label>Raid Coordinating for @RaidManager.DiscordChannel.Name</label>
         <hr />
 
         <div class="container">
+            <label>Send Messages</label>
             <div class="row">
                 <div class="col-3">
-                    <button @onclick="SendRaidRequestMessage">Send Initial Raid Request</button>
+                    <button type="button" class="btn btn-primary" @onclick="SendRaidRequestMessage">Send Raid Request</button>
                 </div>
                 <div class="col-3">
-                    <button @onclick="SendBoostRequestMessage">Send Boost Request</button>
+                    <button type="button" class="btn btn-primary" @onclick="SendBoostRequestMessage">Send Boost Request</button>
                 </div>
             </div>
             <hr />
+            <label>Raid Controls</label>
             <div class="row">
                 <div class="col-3">
-                    <input placeholder="username" @onchange="@((ChangeEventArgs __e) => this.username = __e.Value.ToString())" />
+                    <button type="button" class="btn btn-info" @onclick="ResetRaiders">Reset Raider Queue</button>
                 </div>
                 <div class="col-3">
-                    <button @onclick="(() => AddUserToRaiders(this.username))">Add User To Raider Queue</button>
-                </div>
-                <div class="col-3">
-                    <button @onclick="ResetRaiders">Reset Raider Queue</button>
-                </div>
-                <div class="col-3">
-                    <button @onclick="@(() => this.RaidManager.FinishRaiding())">Finish Raid</button>
+                    <button type="button" class="btn btn-danger" @onclick="@(() => this.RaidManager.FinishRaiding())">Finish Raid</button>
                 </div>
             </div>
             <br />
         </div>
 
-        <table class="table">
+        <br />
+
+        <table class="table table-hover">
             <thead>
                 <tr>
-                    <th>Raider</th>
-                    <th>Send Spawn Message</th>
-                    <th>Joined</th>
-                    <th>Killed</th>
-                    <th>Remove User</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Send Spawn Message</th>
+                    <th scope="col">Joined</th>
+                    <th scope="col">Killed</th>
+                    <th scope="col">Remove User</th>
                 </tr>
             </thead>
             <tbody>
@@ -84,13 +83,14 @@ else
                 {
                     <tr>
                         <td>@raider.Username</td>
+
                         @if (@raider.IsAvailable)
                         {
-                            <td><button @onclick="@(() => SendSpawnRequestMessage(@raider.Username))">Spawn Request</button></td>
+                            <td><button type="button" class="btn btn-outline-primary" @onclick="@(() => SendSpawnRequestMessage(@raider.Username))">Spawn Request</button></td>
                             if (@raider.HasSpawnedBoss)
                             {
-                                <td><button @onclick="SendJoinRequestMessage">Joined Raid Boss</button></td>
-                                <td><button @onclick="@(() => SendKilledRequestMessage(@raider))">Raid Boss Killed</button></td>
+                                <td><button type="button" class="btn btn-outline-primary" @onclick="SendJoinRequestMessage">Joined Raid Boss</button></td>
+                                <td><button type="button" class="btn btn-outline-primary" @onclick="@(() => SendKilledRequestMessage(@raider))">Raid Boss Killed</button></td>
                             }
                             else
                             {
@@ -104,25 +104,22 @@ else
                             <td></td>
                             <td></td>
                         }
-                        <td><button @onclick="@(() => RemoveUserFromRaiders(@raider.Username))">Remove From Queue</button></td>
+                        <td><button type="button" class="btn btn-outline-danger" @onclick="@(() => RemoveUserFromRaiders(@raider.Username))">Remove From Queue</button></td>
                     </tr>
                 }
             </tbody>
-        </table>
-
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Booster</th>
-                </tr>
-            </thead>
             <tbody>
-                @foreach (var booster in this.RaidManager.Boosters)
-                {
-                    <tr>
-                        <td>@booster</td>
-                    </tr>
-                }
+                <tr>
+                    <td>
+                        <input type="text" class="form-control" id="token" aria-describedby="tokenHelp" placeholder="Enter Username" @onchange="@((ChangeEventArgs __e) => this.username = __e.Value.ToString())">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-success" @onclick="(() => AddUserToRaiders(this.username))">Add User To Raider Queue</button>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </tbody>
         </table>
     }
@@ -130,7 +127,9 @@ else
 
 @code {
 
-    private RaidManager RaidManager = new RaidManager();
+    [CascadingParameter(Name = "RaidManagerParent")]
+    public RaidManager RaidManager { get; set; }
+
     private string username;
 
     protected override async Task OnInitializedAsync()
@@ -172,8 +171,8 @@ else
 
     private async void BoostersAdded(object sender, BoostersAddedEventArgs args)
     {
-        if (!this.RaidManager.Boosters.Contains(args.Value))
-            this.RaidManager.Boosters.Add(args.Value);
+        if (this.RaidManager.Boosters.FirstOrDefault(x => x == args.Value.Name) == null)
+            this.RaidManager.Boosters.Add(args.Value.Name);
 
         await InvokeAsync(() =>
         {
@@ -269,6 +268,8 @@ else
 
     public async void FinishRaid()
     {
+        RaidService.ChannelManagerPair.Remove(this.RaidManager.Channel.Id);
+
         await RaidManager.FinishRaiding();
 
         await InvokeAsync(() =>

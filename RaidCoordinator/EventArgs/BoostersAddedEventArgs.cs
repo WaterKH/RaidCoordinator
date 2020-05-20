@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace RaidCoordinator
 {
@@ -9,9 +6,9 @@ namespace RaidCoordinator
 
     public class BoostersAddedEventArgs : EventArgs
     {
-        public string Value { get; }
+        public Booster Value { get; }
 
-        public BoostersAddedEventArgs(string value)
+        public BoostersAddedEventArgs(Booster value)
         {
             this.Value = value;
         }

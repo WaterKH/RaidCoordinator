@@ -13,19 +13,6 @@ namespace RaidCoordinator
 
         public IConfiguration Configuration { get; }
 
-        //private static DiscordManager instance = new DiscordManager();
-
-        //public static DiscordManager Instance
-        //{
-        //    get
-        //    {
-        //        if (instance == null)
-        //            instance = new DiscordManager();
-                
-        //        return instance;
-        //    }
-        //}
-
         public DiscordService(IConfiguration configuration)
         {
             this.Configuration = configuration;
@@ -45,7 +32,16 @@ namespace RaidCoordinator
 
             string token = Configuration["DiscordToken"];
 
-            await client.LoginAsync(TokenType.Bot, token);
+            try
+            {
+                await client.LoginAsync(TokenType.Bot, token);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
             await client.StartAsync();
 
             await Task.Delay(-1);

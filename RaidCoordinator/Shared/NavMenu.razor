@@ -18,12 +18,58 @@
             </NavLink>
         </li>
     </ul>
+    
+    @if (this.Boosters.Count > 0)
+    {
+        <div class="@NavMenuCssClass sidebar-add">
+            <table class="table table-dark">
+                <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Boosted At</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var booster in this.Boosters)
+                {
+                    <tr>
+                        <td>@booster.Name</td>
+                        <td>@booster.BoostedAt.ToLocalTime().ToShortTimeString()</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @code {
+    [CascadingParameter(Name = "RaidManagerParent")]
+    public RaidManager RaidManagerNav { get; set; }
+
+    public List<Booster> Boosters = new List<Booster>();
+
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        this.RaidManagerNav.OnBoostersAdded += this.BoostersAdded;
+    }
+
+    private async void BoostersAdded(object sender, BoostersAddedEventArgs args)
+    {
+        if(args == null)
+            Boosters.Clear();
+        else if (this.Boosters.FirstOrDefault(x => x.Name == args.Value.Name) == null)
+            this.Boosters.Add(args.Value);
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
+    }
 
     private void ToggleNavMenu()
     {

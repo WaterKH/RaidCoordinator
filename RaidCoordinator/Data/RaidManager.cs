@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
-using Discord.WebSocket;
 
 namespace RaidCoordinator
 {
@@ -12,9 +11,10 @@ namespace RaidCoordinator
         public event RaidersChangeDelegate OnRaidersChanged;
         public event BoostersAddedDelegate OnBoostersAdded;
 
-        public IMessage RaidRequestMessage;
-        public IMessage CurrentRaidMessage;
-        public IMessage BoostMessage;
+        public IUserMessage RaidRequestMessage;
+        public IUserMessage CurrentRaidMessage;
+        public IUserMessage BoostMessage;
+        public IUserMessage TokenMessage;
 
         public IMessageChannel DiscordChannel;
         public Channel Channel;
@@ -41,6 +41,11 @@ namespace RaidCoordinator
         public void UpdateBoostList(BoostersAddedEventArgs eventArgs)
         {
             this.OnBoostersAdded(this, eventArgs);
+        }
+
+        public void UpdateToken(int token)
+        {
+            this.Channel.Token = token;
         }
 
         #endregion
@@ -75,6 +80,9 @@ namespace RaidCoordinator
         {
             try
             {
+                if (this.RaidRequestMessage != null)
+                    await this.RaidRequestMessage.ModifyAsync(message => message.Content = "React to the latest raid request to be added to the queue.");
+
                 this.RaidRequestMessage = await this.DiscordChannel.SendMessageAsync("Raid Boss Raider Request - React to this message to join the ranks!");
                 await this.RaidRequestMessage.AddReactionAsync(new Emoji("\uD83D\uDC62"));
             }
@@ -192,6 +200,8 @@ namespace RaidCoordinator
             await this.DiscordChannel.SendMessageAsync("", false, builder.Build());
 
             this.Clear();
+
+            this.UpdateBoostList(null);
         }
 
         public void Clear()
