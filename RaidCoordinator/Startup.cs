@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +20,7 @@ namespace RaidCoordinator
                 .AddEnvironmentVariables();
 
             Configuration = builder.Build();
+            Console.WriteLine(env.EnvironmentName);
         }
 
         public IConfiguration Configuration { get; }
