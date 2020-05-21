@@ -26,8 +26,10 @@ namespace RaidCoordinator
 
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
-        public void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services, ILogger<Startup> logger)
         {
+            logger.LogInformation(Configuration.GetConnectionString("RaidDatabase"));
+
             services.AddDbContext<RaidContext>(options => 
                 options.UseSqlServer(Configuration.GetConnectionString("RaidDatabase")), 
                 ServiceLifetime.Transient, ServiceLifetime.Transient);
