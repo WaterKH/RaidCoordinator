@@ -5,6 +5,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace RaidCoordinator.Data
 {
@@ -17,19 +18,22 @@ namespace RaidCoordinator.Data
         public Dictionary<ulong, RaidManager> ChannelManagerPair = new Dictionary<ulong, RaidManager>();
         
         private readonly Random Random = new Random();
+        private ILogger logger;
 
         // Todo Add a custom emote option
         // todo Add more authentication than just sending channelid
-        public RaidCoordinatorService(IServiceProvider serviceProvider, DbContextOptions<RaidContext> dbContextOptions)
+        public RaidCoordinatorService(IServiceProvider serviceProvider, DbContextOptions<RaidContext> dbContextOptions, ILogger<RaidCoordinatorService> logger)
         {
             this.ServiceProvider = serviceProvider;
             this.DbContextOptions = dbContextOptions;
+            this.logger = logger;
             
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionAdded += OnReactionChanged;
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionRemoved += OnReactionChanged;
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionsCleared += OnReactionsCleared;
             this.ServiceProvider.GetRequiredService<DiscordService>().client.MessageReceived += OnMessageReceived;
 
+            this.logger.LogInformation("Func addition complete");
 
             using (var context = new RaidContext(DbContextOptions))
             {
@@ -127,7 +131,7 @@ namespace RaidCoordinator.Data
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
+                    logger.LogError(e.Message + e.StackTrace);
                     throw;
                 }
             }

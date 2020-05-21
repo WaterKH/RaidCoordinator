@@ -3,10 +3,10 @@
 @using RaidCoordinator.Data
 @using Discord;
 @using Microsoft.Extensions.DependencyInjection;
+
 @inject RaidCoordinatorService RaidService
 @inject DiscordService DiscordServiceReference
 @inject IServiceProvider ServiceProvider
-
 
 <h1>Raider Dashboard</h1>
 <hr />
@@ -182,12 +182,16 @@ else
 
     private async void ReadyChanged(object sender, ReadyChangeEventArgs args)
     {
+        //this.logger.LogInformation("Ready Change Start");
+
         this.RaidService.IsReady = args.Value;
 
         await InvokeAsync(() =>
         {
             base.StateHasChanged();
         });
+
+        //this.logger.LogInformation($"Ready Change Finished: {this.RaidService.IsReady} ~ {args.Value}");
     }
 
     public async void UpdateChannelId(string id)

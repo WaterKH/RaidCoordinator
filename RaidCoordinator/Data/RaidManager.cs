@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Microsoft.Extensions.Logging;
 
 namespace RaidCoordinator
 {
@@ -25,8 +26,12 @@ namespace RaidCoordinator
 
         public bool IsValidated = false;
 
+        //private ILogger logger;
+
         public RaidManager()
         {
+            //this.logger.LogInformation("RaidManager Init");
+
             this.Channel = new Channel();
             this.NumberOfIterations = 0;
         }
@@ -88,7 +93,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
         }
@@ -102,7 +107,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
         }
@@ -117,7 +122,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
         }
@@ -130,7 +135,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
         }
@@ -150,7 +155,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
 
@@ -175,7 +180,7 @@ namespace RaidCoordinator
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                //logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
 
