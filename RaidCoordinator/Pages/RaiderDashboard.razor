@@ -10,7 +10,7 @@
 
 <h1>Raider Dashboard</h1>
 <hr />
-@if (this.RaidManager.Raiders == null || !RaidService.IsReady)
+@if (this.RaidManager.Raiders == null || !DiscordServiceReference.IsReady)
 {
     <p><em>Loading...</em></p>
 }
@@ -130,14 +130,15 @@ else
     [CascadingParameter(Name = "RaidManagerParent")]
     public RaidManager RaidManager { get; set; }
 
+    [CascadingParameter(Name = "DiscordServiceIsReady")]
+    public bool IsReady { get; set; }
+
     private string username;
 
     protected override async Task OnInitializedAsync()
     {
         this.RaidManager.OnRaidersChanged += this.RaidersChanged;
         this.RaidManager.OnBoostersAdded += this.BoostersAdded;
-
-        DiscordServiceReference.OnReadyChanged += this.ReadyChanged;
     }
 
     // The event handler, will update the HTML view according to new stock value
@@ -178,20 +179,6 @@ else
         {
             base.StateHasChanged();
         });
-    }
-
-    private async void ReadyChanged(object sender, ReadyChangeEventArgs args)
-    {
-        //this.logger.LogInformation("Ready Change Start");
-
-        this.RaidService.IsReady = args.Value;
-
-        await InvokeAsync(() =>
-        {
-            base.StateHasChanged();
-        });
-
-        //this.logger.LogInformation($"Ready Change Finished: {this.RaidService.IsReady} ~ {args.Value}");
     }
 
     public async void UpdateChannelId(string id)

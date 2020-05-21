@@ -14,7 +14,6 @@ namespace RaidCoordinator.Data
         protected IServiceProvider ServiceProvider { get; set; }
         protected DbContextOptions<RaidContext> DbContextOptions { get; set; }
 
-        public bool IsReady = false;
         public Dictionary<ulong, RaidManager> ChannelManagerPair = new Dictionary<ulong, RaidManager>();
         
         private readonly Random Random = new Random();

@@ -12,18 +12,18 @@ namespace RaidCoordinator
         public DiscordSocketClient client { get; set; }
         public event ReadyChangeDelegate OnReadyChanged;
 
-        public IConfiguration Configuration { get; }
+        public bool IsReady = false;
+
         private ILogger logger { get; }
 
-        public DiscordService(IConfiguration configuration, ILogger<DiscordService> logger)
+        public DiscordService(ILogger<DiscordService> logger)
         {
-            this.Configuration = configuration;
             this.logger = logger;
 
-            this.MainAsync();
+            //this.MainAsync();
         }
 
-        private async Task MainAsync()
+        public async Task InitializeAsync(string discordToken)
         {
             logger.Log(LogLevel.Information, "Initializing..");
 
@@ -35,10 +35,9 @@ namespace RaidCoordinator
             client.Ready += Client_Ready;
             client.Log += Client_Log;
 
-            string token = Configuration["DiscordToken"];
+            string token = discordToken;
 
             logger.Log(LogLevel.Information, $"Token: {token}");
-            logger.LogInformation($"ConnectionString: {Configuration.GetConnectionString("RaidDatabase")}");
 
             try
             {
@@ -54,7 +53,7 @@ namespace RaidCoordinator
 
             logger.Log(LogLevel.Information, "Finished Init..");
 
-            await Task.Delay(-1);
+            //await Task.Delay(-1);
         }
        
         private async Task Client_Log(LogMessage Message)

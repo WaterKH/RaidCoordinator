@@ -1,31 +1,49 @@
 ﻿@inherits LayoutComponentBase
 
+@inject DiscordService DiscordServiceReference
+
 <div class="sidebar">
+    <CascadingValue Value="@RaidManagerParent" Name="RaidManagerParent">
+        <NavMenu />
+    </CascadingValue>
+</div>
+
+<div class="main">
+    <div class="top-row px-4">
+        @* Todo - put in my own About page *@
+        @*<a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>*@
+    </div>
+
+    <div class="content px-4">
         <CascadingValue Value="@RaidManagerParent" Name="RaidManagerParent">
-            <NavMenu />
+        <CascadingValue Value="@IsReady" Name="DiscordServiceIsReady">
+            @Body
+        </CascadingValue>
         </CascadingValue>
     </div>
+</div>
 
-    <div class="main">
-        <div class="top-row px-4">
-            @* Todo - put in my own About page *@
-            @*<a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>*@
-        </div>
-
-        <div class="content px-4">
-            <CascadingValue Value="@RaidManagerParent" Name="RaidManagerParent">
-                @Body
-            </CascadingValue>
-        </div>
-    </div>
-
-@functions
+@code
 {
     public RaidManager RaidManagerParent;
+    public bool IsReady;
 
     protected override async Task OnInitializedAsync()
     {
         // Does this override the channels we create when creating the Channel-Managers in RaidCoordinatorService?
         this.RaidManagerParent = new RaidManager();
+
+        DiscordServiceReference.OnReadyChanged += this.ReadyChanged;
+    }
+
+    
+    private async void ReadyChanged(object sender, ReadyChangeEventArgs args)
+    {
+        this.DiscordServiceReference.IsReady = args.Value;
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
     }
 }

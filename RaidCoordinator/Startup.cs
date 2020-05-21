@@ -51,6 +51,8 @@ namespace RaidCoordinator
         {
             logger.LogInformation(Configuration.GetConnectionString("RaidDatabase"));
 
+            var discordService = app.ApplicationServices.GetRequiredService<DiscordService>();
+            discordService.InitializeAsync(Configuration["DiscordToken"]);
 
             if (env.IsDevelopment())
             {
