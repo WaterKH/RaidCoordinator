@@ -8,7 +8,7 @@
 @inject DiscordService DiscordServiceReference
 @inject IServiceProvider ServiceProvider
 
-<h1>Raider Dashboard</h1>
+<h1>Raid Dashboard</h1>
 <hr />
 @if (this.RaidManager.Raiders == null || !DiscordServiceReference.IsReady)
 {
@@ -172,13 +172,15 @@ else
 
     private async void BoostersAdded(object sender, BoostersAddedEventArgs args)
     {
-        if (this.RaidManager.Boosters.FirstOrDefault(x => x == args.Value.Name) == null)
+        if (args != null && this.RaidManager.Boosters.FirstOrDefault(x => x == args.Value.Name) == null)
+        {
             this.RaidManager.Boosters.Add(args.Value.Name);
 
-        await InvokeAsync(() =>
-        {
-            base.StateHasChanged();
-        });
+            await InvokeAsync(() =>
+            {
+                base.StateHasChanged();
+            });
+        }
     }
 
     public async void UpdateChannelId(string id)
@@ -307,5 +309,6 @@ else
     public void Dispose()
     {
         this.RaidManager.OnRaidersChanged -= this.RaidersChanged;
+        this.RaidManager.OnBoostersAdded -= this.BoostersAdded;
     }
 }

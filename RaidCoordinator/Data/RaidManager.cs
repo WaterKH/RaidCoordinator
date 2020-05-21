@@ -193,6 +193,9 @@ namespace RaidCoordinator
             var raiders = string.Join(", ", this.Raiders.Select(x => x.Username));
             var boosters = string.Join(", ", this.Boosters);
 
+            if (string.IsNullOrEmpty(raiders) && string.IsNullOrEmpty(boosters) && this.NumberOfIterations == 0)
+                return;
+
             EmbedBuilder builder = new EmbedBuilder();
 
             builder.WithTitle("Raid Coordinating Complete");
