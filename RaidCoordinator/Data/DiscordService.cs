@@ -38,6 +38,7 @@ namespace RaidCoordinator
             string token = Configuration["DiscordToken"];
 
             logger.Log(LogLevel.Information, $"Token: {token}");
+            logger.LogInformation($"ConnectionString: {Configuration.GetConnectionString("RaidDatabase")}");
 
             try
             {
