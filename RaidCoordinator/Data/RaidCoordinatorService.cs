@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace RaidCoordinator.Data
+namespace RaidCoordinator
 {
     public class RaidCoordinatorService
     {
@@ -20,7 +20,6 @@ namespace RaidCoordinator.Data
         private ILogger logger;
 
         // Todo Add a custom emote option
-        // todo Add more authentication than just sending channelid
         public RaidCoordinatorService(IServiceProvider serviceProvider, DbContextOptions<RaidContext> dbContextOptions, ILogger<RaidCoordinatorService> logger)
         {
             this.ServiceProvider = serviceProvider;
@@ -30,7 +29,7 @@ namespace RaidCoordinator.Data
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionAdded += OnReactionChanged;
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionRemoved += OnReactionChanged;
             this.ServiceProvider.GetRequiredService<DiscordService>().client.ReactionsCleared += OnReactionsCleared;
-            this.ServiceProvider.GetRequiredService<DiscordService>().client.MessageReceived += OnMessageReceived;
+            //this.ServiceProvider.GetRequiredService<DiscordService>().client.MessageReceived += OnMessageReceived;
 
             this.logger.LogInformation("Func addition complete");
 
@@ -73,70 +72,68 @@ namespace RaidCoordinator.Data
             manager.UpdateOnRaidersChangedEvent(null);
         }
 
-        public async Task OnMessageReceived(SocketMessage message)
+        public async Task<Embed> SendChannelToken(ulong channelId, bool resetToken = false)
         {
-            if (!(message.Channel is SocketDMChannel) || message.Author.IsBot)
-                return;
-
-            await SendChannelToken(message);
-        }
-
-        public async Task SendChannelToken(SocketMessage message)
-        {
-            var messageContent = message.Content.Split(":");
-
-            if (ulong.TryParse(messageContent[0], out ulong channelId))
+            try
             {
-                try
+                using var context = new RaidContext(DbContextOptions);
+
+                ChannelToken channelTokenObject = null;
+                foreach (var channelToken in context.ChannelTokens)
                 {
-                    using (var context = new RaidContext(DbContextOptions))
+                    if (BitConverter.ToUInt64(channelToken.ChannelId) == channelId)
                     {
-                        ChannelToken channelTokenObject = null;
-                        foreach (var channelToken in context.ChannelTokens)
-                        {
-                            if (BitConverter.ToUInt64(channelToken.ChannelId) == channelId)
-                            {
-                                channelTokenObject = channelToken;
-                                break;
-                            }
-                        }
-
-                        if (channelTokenObject == null)
-                        {
-                            var token = this.Random.Next(256, Int32.MaxValue);
-
-                            context.Add(new ChannelToken {ChannelId = BitConverter.GetBytes(channelId), Token = token});
-
-                            context.SaveChanges();
-
-                            await message.Channel.SendMessageAsync($"Use this token to authenticate when you put your Channel Id in: {token}");
-                        }
-                        else
-                        {
-                            if (messageContent.Length > 1 && messageContent[1].ToLower().Equals("new token"))
-                            {
-                                channelTokenObject.Token = this.Random.Next(256, Int32.MaxValue);
-
-                                context.SaveChanges();
-
-                                await message.Channel.SendMessageAsync($"Use this token to authenticate when you put your Channel Id in: {channelTokenObject.Token}");
-                            }
-                            else
-                            {
-                                await message.Channel.SendMessageAsync("Please use the last token generated. If you would like a new token, message in this format: \"<channelId>:New Token\"");
-                            }
-                        }
+                        channelTokenObject = channelToken;
+                        break;
                     }
                 }
-                catch (Exception e)
+
+                EmbedBuilder builder = new EmbedBuilder();
+
+                builder.WithTitle("Raid Coordinating Credentials");
+
+                var tokenInEmbed = 0;
+                var infoInEmbed = "";
+
+                if (channelTokenObject == null)
                 {
-                    logger.LogError(e.Message + e.StackTrace);
-                    throw;
+                    var token = this.Random.Next(256, Int32.MaxValue);
+
+                    context.Add(new ChannelToken { ChannelId = BitConverter.GetBytes(channelId), Token = token });
+
+                    context.SaveChanges();
+
+                    tokenInEmbed = token;
+                    infoInEmbed = "Use this **token** to authenticate with your **channel Id**.";
                 }
+                else
+                {
+                    if (resetToken)
+                    {
+                        channelTokenObject.Token = this.Random.Next(256, Int32.MaxValue);
+
+                        context.SaveChanges();
+
+                        infoInEmbed = "**TOKEN RESET**: Use this **token** to authenticate with your **channel Id**.";
+                    }
+                    else
+                    {
+                        infoInEmbed = "Please use the last **token** generated for your **channel Id**. If you would like a new token, use the **!resetraidtoken** command.";
+                    }
+
+                    tokenInEmbed = channelTokenObject.Token;
+                }
+
+                builder.AddField("Info:", infoInEmbed);
+                builder.AddField("Channel Id:", channelId);
+                builder.AddField("Token:", tokenInEmbed);
+
+                return builder.Build();
             }
-            else
+            catch (Exception e)
             {
-                await message.Channel.SendMessageAsync("I'm sorry, please just paste your Channel Id in your message");
+                logger.LogError(e.Message + e.StackTrace);
+                throw;
             }
         }
     }
