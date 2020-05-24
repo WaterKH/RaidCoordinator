@@ -43,7 +43,7 @@ namespace RaidCoordinator
                 LogLevel = LogSeverity.Debug
             });
 
-            this.InstallCommands();
+            await this.InstallCommands();
 
             client.Ready += Client_Ready;
             client.Log += Client_Log;
@@ -98,7 +98,7 @@ namespace RaidCoordinator
 
         private async Task HandleCommand(SocketMessage messageParam)
         {
-            if (messageParam.Author.IsBot)
+            if (messageParam.Author.IsBot || messageParam.Channel is SocketDMChannel)
                 return;
 
             var message = messageParam as SocketUserMessage;
@@ -108,18 +108,15 @@ namespace RaidCoordinator
             int argPos = 0;
 
             // Determine if the message is a command, based on if it starts with '!' or a mention prefix
-            if (!(message.HasCharPrefix('!', ref argPos) || message.HasMentionPrefix(client.CurrentUser, ref argPos))) 
+            if (!message.HasCharPrefix('!', ref argPos)) 
                 return;
 
             // Create a Command Context
             var context = new SocketCommandContext(client, message);
 
-
             logger.LogInformation("Send Command");
-            //var result =
+
             await commands.ExecuteAsync(context, argPos, services);
-            //if (!result.IsSuccess)
-            //    await context.Channel.SendMessageAsync(result.ErrorReason);
 
             logger.LogInformation("Command Sent");
         }
