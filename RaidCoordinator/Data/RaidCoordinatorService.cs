@@ -33,11 +33,10 @@ namespace RaidCoordinator
 
             this.logger.LogInformation("Func addition complete");
 
-            using (var context = new RaidContext(DbContextOptions))
-            {
-                foreach (var channelToken in context.ChannelTokens)
-                    this.ChannelManagerPair.Add(BitConverter.ToUInt64(channelToken.ChannelId), new RaidManager());
-            }
+            using var context = new RaidContext(DbContextOptions);
+
+            foreach (var channelToken in context.ChannelTokens)
+                this.ChannelManagerPair.Add(BitConverter.ToUInt64(channelToken.ChannelId), new RaidManager());
         }
 
         private bool CheckMessage(IMessage message, ulong messageIdToCheck)

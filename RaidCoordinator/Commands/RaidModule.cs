@@ -12,6 +12,7 @@ namespace RaidCoordinator
     public class RaidModule : ModuleBase<SocketCommandContext>
     {
         private IServiceProvider serviceProvider;
+
         public RaidModule(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
@@ -31,6 +32,18 @@ namespace RaidCoordinator
             await this.HandleRaidChannelTokenCommand(true);
 
             await ReplyAsync("Authentication token reset! New authentication token sent to your DMs.");
+        }
+
+        [Command("resetraid"), Summary("Resets the channel for party raiding. Use this if you want to unlink the current channel.")]
+        public async Task ResetRaid()
+        {
+            using var context = new RaidContext(new DbContextOptions<RaidContext>());
+
+            context.ChannelTokens.Remove(context.ChannelTokens.FirstOrDefault(x => BitConverter.ToUInt64(x.ChannelId) == Context.Channel.Id));
+
+            context.SaveChanges();
+
+            await ReplyAsync("Channel removed. Please use the !setraid command to set a new channel.");
         }
 
         private async Task HandleRaidChannelTokenCommand(bool resetToken = false)

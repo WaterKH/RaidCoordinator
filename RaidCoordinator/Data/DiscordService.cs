@@ -48,8 +48,6 @@ namespace RaidCoordinator
             client.Ready += Client_Ready;
             client.Log += Client_Log;
 
-            logger.Log(LogLevel.Information, $"Token: {discordToken}");
-
             try
             {
                 await client.LoginAsync(TokenType.Bot, discordToken);
@@ -61,7 +59,7 @@ namespace RaidCoordinator
             }
 
             await client.StartAsync();
-
+            
             logger.Log(LogLevel.Information, "Finished Init..");
 
             //await Task.Delay(-1);
