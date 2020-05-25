@@ -18,18 +18,18 @@ else
 {
     if (!RaidManager.IsValidated)
     {
-        <div>Please validate your channel before continuing..</div>
+        <div>Please validate your channel before continuing. Use the Discord Bot command (!setraid) to retrieve your ChannelId and Token.</div>
         <br />
 
         <div class="container">
             <div class="row">
                 <div class="col-4">
                     <input type="text" class="form-control" id="channelId" aria-describedby="channelHelp" placeholder="Enter ChannelId" @onchange="@((ChangeEventArgs __e) => UpdateChannelId(__e.Value.ToString()))">
-                    <small id="channelHelp" class="form-text text-muted">Right click on the channel you want the bot to post to (Developer mode needs to be active).</small>
+                    <small id="channelHelp" class="form-text text-muted">The channelid given to you from the RaidCoordinator bot in the channel you want to send messages to.</small>
                 </div>
                 <div class="col-4">
                     <input type="text" class="form-control" id="token" aria-describedby="tokenHelp" placeholder="Enter Token" @onchange="@((ChangeEventArgs __e) => UpdateToken(__e.Value.ToString()))">
-                    <small id="tokenHelp" class="form-text text-muted">Send your channel id to the bot in Discord to retrieve your token.</small>
+                    <small id="tokenHelp" class="form-text text-muted">The token given to you from the RaidCoordinator bot in conjunction with your channel id.</small>
                 </div>
                 <div class="col-3">
                     <button type="button" class="btn btn-success" @onclick="ValidateChannelAndToken">Validate Channel and Token</button>
