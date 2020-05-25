@@ -6,6 +6,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Hangfire;
 
 namespace RaidCoordinator
 {
@@ -15,7 +16,7 @@ namespace RaidCoordinator
         protected DbContextOptions<RaidContext> DbContextOptions { get; set; }
 
         public Dictionary<ulong, RaidManager> ChannelManagerPair = new Dictionary<ulong, RaidManager>();
-        
+
         private readonly Random Random = new Random();
         private ILogger logger;
 
@@ -36,7 +37,9 @@ namespace RaidCoordinator
             using var context = new RaidContext(DbContextOptions);
 
             foreach (var channelToken in context.ChannelTokens)
+            {
                 this.ChannelManagerPair.Add(BitConverter.ToUInt64(channelToken.ChannelId), new RaidManager());
+            }
         }
 
         private bool CheckMessage(IMessage message, ulong messageIdToCheck)
@@ -134,6 +137,11 @@ namespace RaidCoordinator
                 logger.LogError(e.Message + e.StackTrace);
                 throw;
             }
+        }
+
+        public async Task AddRaidBoostTime(RaidBonusTime bonusTime)
+        {
+            
         }
     }
 }

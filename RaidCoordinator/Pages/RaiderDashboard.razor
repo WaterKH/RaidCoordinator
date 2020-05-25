@@ -52,6 +52,19 @@ else
                 <div class="col-3">
                     <button type="button" class="btn btn-primary" @onclick="SendBoostRequestMessage">Send Boost Request</button>
                 </div>
+                <div class="col-3">
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="boostMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" @onclick="e => this.show=!this.show ">
+                            @DropdownText
+                        </button>
+                        <div class="dropdown-menu @(show ? "show" : "")" aria-labelledby="boostMenu">
+                            <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus2Am))">2:00AM (PST)</button>
+                            <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus8Am))">8:00AM (PST)</button>
+                            <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus2Pm))">2:00PM (PST)</button>
+                            <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus8Pm))">8:00PM (PST)</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             <hr />
             <label>Raid Controls</label>
@@ -133,15 +146,19 @@ else
     [CascadingParameter(Name = "DiscordServiceIsReady")]
     public bool IsReady { get; set; }
 
+    public string DropdownText;
+
     private string username;
+    private bool show;
 
     protected override async Task OnInitializedAsync()
     {
         this.RaidManager.OnRaidersChanged += this.RaidersChanged;
         this.RaidManager.OnBoostersAdded += this.BoostersAdded;
+
+        this.DropdownText = "Select Boost Time";
     }
 
-    // The event handler, will update the HTML view according to new stock value
     private async void RaidersChanged(object sender, RaidersChangeEventArgs args)
     {
         // If null, we have removed all the reactions, thus remove everyone from the list
@@ -185,12 +202,28 @@ else
 
     public async void UpdateChannelId(string id)
     {
-        this.RaidManager.Channel.Id = ulong.Parse(id);
+        try
+        {
+            this.RaidManager.Channel.Id = ulong.Parse(id);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async void UpdateToken(string id)
     {
-        this.RaidManager.Channel.Token = int.Parse(id);
+        try
+        {
+            this.RaidManager.Channel.Token = int.Parse(id);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
     public async void ValidateChannelAndToken()
@@ -279,6 +312,37 @@ else
     public async Task SendBoostRequestMessage()
     {
         await RaidManager.SendBoostRequestMessage();
+    }
+
+    public async Task SelectBoostTime(RaidBonusTime bonusTime)
+    {
+        switch (bonusTime)
+        {
+            case RaidBonusTime.Bonus2Am:
+                DropdownText = "2:00 AM";
+                break;
+            case RaidBonusTime.Bonus8Am:
+                DropdownText = "8:00 AM";
+                break;
+            case RaidBonusTime.Bonus2Pm:
+                DropdownText = "2:00 PM";
+                break;
+            case RaidBonusTime.Bonus8Pm:
+                DropdownText = "8:00 PM";
+                break;
+            default:
+                DropdownText = "Select Boost Time";
+                break;
+        }
+
+        this.show = false;
+
+        await RaidService.AddRaidBoostTime(bonusTime);
+        
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
     }
 
     public async Task SendSpawnRequestMessage(string user)

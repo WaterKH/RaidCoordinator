@@ -24,6 +24,7 @@ namespace RaidCoordinator
         public int NumberOfIterations = 0;
 
         public bool IsValidated = false;
+        public RaidBonusTime RaidBonusTime;
 
         //private ILogger logger;
 
@@ -50,6 +51,13 @@ namespace RaidCoordinator
         public void UpdateToken(int token)
         {
             this.Channel.Token = token;
+        }
+
+        public void UpdateRaidBonusTime(RaidBonusTime bonusTime)
+        {
+            this.RaidBonusTime = bonusTime;
+
+
         }
 
         #endregion
