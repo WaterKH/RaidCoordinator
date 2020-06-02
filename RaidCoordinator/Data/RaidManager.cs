@@ -230,8 +230,6 @@ namespace RaidCoordinator
             this.BoostMessage = null;
             this.RaidRequestMessage = null;
             this.CurrentRaidMessage = null;
-            
-            this.IsValidated = false;
         }
     }
 }

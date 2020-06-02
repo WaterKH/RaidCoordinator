@@ -77,6 +77,11 @@ else
                 </div>
             </div>
             <br />
+            <div class="row">
+                <div class="col-3">
+                    <button type="button" class="btn btn-danger" @onclick="Logout">Logout</button>
+                </div>
+            </div>
         </div>
 
         <br />
@@ -292,12 +297,12 @@ else
         });
     }
 
-    public async void FinishRaid()
+    public async Task Logout()
     {
         RaidService.ChannelManagerPair.Remove(this.RaidManager.Channel.Id);
 
-        await RaidManager.FinishRaiding();
-
+        RaidManager.IsValidated = false;
+        
         await InvokeAsync(() =>
         {
             base.StateHasChanged();
@@ -338,7 +343,7 @@ else
         this.show = false;
 
         await RaidService.AddRaidBoostTime(bonusTime);
-        
+
         await InvokeAsync(() =>
         {
             base.StateHasChanged();
