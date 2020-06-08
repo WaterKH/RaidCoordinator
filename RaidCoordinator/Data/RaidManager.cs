@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 
 namespace RaidCoordinator
 {
@@ -25,6 +27,9 @@ namespace RaidCoordinator
 
         public bool IsValidated = false;
         public RaidBonusTime RaidBonusTime;
+
+        public IReadOnlyCollection<SocketRole> Roles;
+        public SocketRole RoleToPing;
 
         //private ILogger logger;
 
@@ -109,7 +114,7 @@ namespace RaidCoordinator
         {
             try
             {
-                this.BoostMessage = await this.DiscordChannel.SendMessageAsync("@everyone BOOST TIME - React to this message to let us know you've boosted");
+                this.BoostMessage = await this.DiscordChannel.SendMessageAsync($"{this.RoleToPing.Mention} BOOST TIME - React to this message to let us know you've boosted");
                 await this.BoostMessage.AddReactionAsync(new Emoji("\u2757"));
             }
             catch (Exception e)
@@ -183,7 +188,8 @@ namespace RaidCoordinator
 
             try
             {
-                /*this.RaidRequestMessage =*/ await this.DiscordChannel.SendMessageAsync("Resummon raid bosses!");
+                var temp = await this.DiscordChannel.SendMessageAsync("Resummon raid bosses!");
+                await temp.AddReactionAsync(new Emoji("\uD83D\uDC4D"));
             }
             catch (Exception e)
             {
@@ -219,17 +225,22 @@ namespace RaidCoordinator
             this.UpdateBoostList(null);
         }
 
-        public void Clear()
+        public void Clear(bool logout = false)
         {
             this.Raiders.Clear();
             this.Boosters.Clear();
 
             this.NumberOfIterations = 0;
-            this.Channel = new Channel();
-            this.DiscordChannel = null;
+
             this.BoostMessage = null;
             this.RaidRequestMessage = null;
             this.CurrentRaidMessage = null;
+
+            if (logout)
+            {
+                this.DiscordChannel = null;
+                this.Channel = new Channel();
+            }
         }
     }
 }

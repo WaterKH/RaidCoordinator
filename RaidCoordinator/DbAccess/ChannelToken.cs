@@ -6,7 +6,8 @@ namespace RaidCoordinator
 {
     public class ChannelToken
     {
-        public Byte[] ChannelId { get; set; }
+        public byte[] ChannelId { get; set; }
+        public byte[] GuildId { get; set; }
         public int Token { get; set; }
     }
 
@@ -18,6 +19,7 @@ namespace RaidCoordinator
 
             builder.HasKey(k => k.ChannelId);
 
+            builder.Property(p => p.GuildId);
             builder.Property(p => p.Token).IsRequired();
         }
     }

@@ -2,6 +2,7 @@
 
 @using RaidCoordinator
 @using Discord;
+@using Discord.WebSocket
 @using Microsoft.Extensions.DependencyInjection;
 
 @inject RaidCoordinatorService RaidService
@@ -49,15 +50,25 @@ else
                 <div class="col-3">
                     <button type="button" class="btn btn-primary" @onclick="SendRaidRequestMessage">Send Raid Request</button>
                 </div>
+                <div class="col-3"></div>
                 <div class="col-3">
-                    <button type="button" class="btn btn-primary" @onclick="SendBoostRequestMessage">Send Boost Request</button>
+                    <div class="dropdown">
+                        
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="roleMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" @onclick="e => this.showRole = !this.showRole">Send Boost Request To</button>
+                        <div class="dropdown-menu @(showRole ? "show" : "")" aria-labelledby="roleMenu">
+                            @foreach (var role in this.RaidManager.Roles)
+                            {
+                                <button class="dropdown-item" type="button" @onclick="@(e => SendBoostWithRole(role))">@role.Name</button>
+                            }
+                        </div>
+                    </div>
                 </div>
                 <div class="col-3">
                     <div class="dropdown">
-                        <button class="btn btn-primary dropdown-toggle" type="button" id="boostMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" @onclick="e => this.show=!this.show ">
-                            @DropdownText
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="boostMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" @onclick="e => this.showBoost = !this.showBoost">
+                            @DropdownTextBoost
                         </button>
-                        <div class="dropdown-menu @(show ? "show" : "")" aria-labelledby="boostMenu">
+                        <div class="dropdown-menu @(showBoost ? "show" : "")" aria-labelledby="boostMenu">
                             <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus2Am))">2:00AM (PST)</button>
                             <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus8Am))">8:00AM (PST)</button>
                             <button class="dropdown-item" type="button" @onclick="@(e => SelectBoostTime(RaidBonusTime.Bonus2Pm))">2:00PM (PST)</button>
@@ -72,12 +83,10 @@ else
                 <div class="col-3">
                     <button type="button" class="btn btn-info" @onclick="ResetRaiders">Reset Raider Queue</button>
                 </div>
+                <div class="col-3"></div>
                 <div class="col-3">
                     <button type="button" class="btn btn-danger" @onclick="@(() => this.RaidManager.FinishRaiding())">Finish Raid</button>
                 </div>
-            </div>
-            <br />
-            <div class="row">
                 <div class="col-3">
                     <button type="button" class="btn btn-danger" @onclick="Logout">Logout</button>
                 </div>
@@ -151,17 +160,20 @@ else
     [CascadingParameter(Name = "DiscordServiceIsReady")]
     public bool IsReady { get; set; }
 
-    public string DropdownText;
+    public string DropdownTextBoost;
+    public string DropdownTextRole;
 
     private string username;
-    private bool show;
+    private bool showBoost;
+    private bool showRole;
 
     protected override async Task OnInitializedAsync()
     {
         this.RaidManager.OnRaidersChanged += this.RaidersChanged;
         this.RaidManager.OnBoostersAdded += this.BoostersAdded;
 
-        this.DropdownText = "Select Boost Time";
+        this.DropdownTextBoost = "Select Boost Time";
+        //this.DropdownTextRole = "Select Role To Ping";
     }
 
     private async void RaidersChanged(object sender, RaidersChangeEventArgs args)
@@ -205,7 +217,7 @@ else
         }
     }
 
-    public async void UpdateChannelId(string id)
+    public void UpdateChannelId(string id)
     {
         try
         {
@@ -218,7 +230,7 @@ else
         }
     }
 
-    public async void UpdateToken(string id)
+    public void UpdateToken(string id)
     {
         try
         {
@@ -241,6 +253,9 @@ else
                 if (BitConverter.ToUInt64(channelToken.ChannelId) == this.RaidManager.Channel.Id && channelToken.Token == this.RaidManager.Channel.Token)
                 {
                     channelTokenObject = channelToken;
+
+                    this.RaidManager.Roles = this.ServiceProvider.GetRequiredService<DiscordService>().client.GetGuild(BitConverter.ToUInt64(channelToken.GuildId)).Roles;
+
                     break;
                 }
             }
@@ -258,6 +273,7 @@ else
 
             RaidService.ChannelManagerPair[this.RaidManager.Channel.Id] = this.RaidManager;
         }
+
 
         await InvokeAsync(() =>
         {
@@ -302,7 +318,9 @@ else
         RaidService.ChannelManagerPair.Remove(this.RaidManager.Channel.Id);
 
         RaidManager.IsValidated = false;
-        
+
+        RaidManager.Clear(true);
+
         await InvokeAsync(() =>
         {
             base.StateHasChanged();
@@ -314,9 +332,18 @@ else
         await RaidManager.SendRaidRequestMessage();
     }
 
-    public async Task SendBoostRequestMessage()
+    public async Task SendBoostWithRole(SocketRole roleName)
     {
+        this.showRole = false;
+
+        this.RaidManager.RoleToPing = roleName;
+
         await RaidManager.SendBoostRequestMessage();
+
+        await InvokeAsync(() =>
+        {
+            base.StateHasChanged();
+        });
     }
 
     public async Task SelectBoostTime(RaidBonusTime bonusTime)
@@ -324,23 +351,23 @@ else
         switch (bonusTime)
         {
             case RaidBonusTime.Bonus2Am:
-                DropdownText = "2:00 AM";
+                DropdownTextBoost = "2:00 AM";
                 break;
             case RaidBonusTime.Bonus8Am:
-                DropdownText = "8:00 AM";
+                DropdownTextBoost = "8:00 AM";
                 break;
             case RaidBonusTime.Bonus2Pm:
-                DropdownText = "2:00 PM";
+                DropdownTextBoost = "2:00 PM";
                 break;
             case RaidBonusTime.Bonus8Pm:
-                DropdownText = "8:00 PM";
+                DropdownTextBoost = "8:00 PM";
                 break;
             default:
-                DropdownText = "Select Boost Time";
+                DropdownTextBoost = "Select Boost Time";
                 break;
         }
 
-        this.show = false;
+        this.showBoost = false;
 
         await RaidService.AddRaidBoostTime(bonusTime);
 

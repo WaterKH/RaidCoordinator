@@ -74,10 +74,12 @@ namespace RaidCoordinator
             manager.UpdateOnRaidersChangedEvent(null);
         }
 
-        public async Task<Embed> SendChannelToken(ulong channelId, bool resetToken = false)
+        public async Task<Embed> SendChannelToken(ulong channelId, ulong guildId, bool resetToken = false)
         {
             try
             {
+                //var manager = this.ChannelManagerPair[channelId];
+
                 using var context = new RaidContext(DbContextOptions);
 
                 ChannelToken channelTokenObject = null;
@@ -101,7 +103,7 @@ namespace RaidCoordinator
                 {
                     var token = this.Random.Next(256, Int32.MaxValue);
 
-                    context.Add(new ChannelToken { ChannelId = BitConverter.GetBytes(channelId), Token = token });
+                    context.Add(new ChannelToken { ChannelId = BitConverter.GetBytes(channelId), GuildId = BitConverter.GetBytes(guildId), Token = token });
 
                     context.SaveChanges();
 

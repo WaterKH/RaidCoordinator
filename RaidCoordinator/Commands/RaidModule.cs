@@ -21,17 +21,19 @@ namespace RaidCoordinator
         [Command("setraid"), Summary("Sets the channel for party raiding and DMs the Raid Coordinator the channel Id and token.")]
         public async Task SetRaid()
         {
-            await this.HandleRaidChannelTokenCommand();
+            var passed = await this.HandleRaidChannelTokenCommand();
 
-            await ReplyAsync("Authentication token sent to your DMs.");
+            if (passed)
+                await ReplyAsync("Authentication token sent to your DMs.");
         }
 
         [Command("resetraidtoken"), Summary("Resets the token for the channel for party raiding. Use this if your token has been compromised.")]
         public async Task ResetRaidToken()
         {
-            await this.HandleRaidChannelTokenCommand(true);
+            var passed = await this.HandleRaidChannelTokenCommand(true);
 
-            await ReplyAsync("Authentication token reset! New authentication token sent to your DMs.");
+            if(passed)
+                await ReplyAsync("Authentication token reset! New authentication token sent to your DMs.");
         }
 
         [Command("resetraid"), Summary("Resets the channel for party raiding. Use this if you want to unlink the current channel.")]
@@ -46,7 +48,7 @@ namespace RaidCoordinator
             await ReplyAsync("Channel removed. Please use the !setraid command to set a new channel.");
         }
 
-        private async Task HandleRaidChannelTokenCommand(bool resetToken = false)
+        private async Task<bool> HandleRaidChannelTokenCommand(bool resetToken = false)
         {
             var user = Context.User as SocketGuildUser;
             var role = user.Guild.Roles.FirstOrDefault(x => x.Name == "Raid Coordinator");
@@ -56,9 +58,11 @@ namespace RaidCoordinator
                 var messageDm = await user.GetOrCreateDMChannelAsync();
                 try
                 {
-                    var embedMessage = await this.serviceProvider.GetRequiredService<RaidCoordinatorService>().SendChannelToken(Context.Channel.Id, resetToken);
+                    var embedMessage = await this.serviceProvider.GetRequiredService<RaidCoordinatorService>().SendChannelToken(Context.Channel.Id, Context.Guild.Id, resetToken);
 
                     await messageDm.SendMessageAsync("", false, embedMessage);
+
+                    return true;
                 }
                 catch (Exception e)
                 {
@@ -69,6 +73,8 @@ namespace RaidCoordinator
             else
             {
                 await ReplyAsync("You don't have the appropriate role ~**Raid Coordinator**~ to set this channel.");
+
+                return false;
             }
         }
     }
